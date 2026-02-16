@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>GenAI</title>
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+  body {
+    background: radial-gradient(circle at top, #0f172a, #020617);
+  }
+
+  .glass {
+    backdrop-filter: blur(14px);
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .msg {
+    animation: pop 0.25s ease-out;
+  }
+
+  @keyframes pop {
+    from { opacity: 0; transform: translateY(10px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .dots span {
+    animation: blink 1.4s infinite both;
+  }
+  .dots span:nth-child(2) { animation-delay: .2s; }
+  .dots span:nth-child(3) { animation-delay: .4s; }
+
+  @keyframes blink {
+    0% { opacity: .2 }
+    20% { opacity: 1 }
+    100% { opacity: .2 }
+  }
+</style>
+</head>
+
+<body class="h-screen flex flex-col text-gray-100 font-sans">
+
+<!-- HEADER -->
+<header class="glass px-6 py-4 flex justify-between items-center shadow-xl">
+  <div class="flex items-center gap-3">
+    <div class="w-3 h-3 rounded-full bg-emerald-400 animate-pulse"></div>
+    <h1 class="font-semibold tracking-wide text-lg">GenAI</h1>
+  </div>
+  <span class="text-xs text-gray-400">Gemini • Podman</span>
+</header>
+
+<!-- CHAT AREA -->
+<main id="chat" class="flex-1 overflow-y-auto px-6 py-6 space-y-4">
+  <div class="flex justify-start msg">
+    <div class="glass px-5 py-4 rounded-2xl max-w-[70%]">
+      👋 Welcome. Ask me anything.
+    </div>
+  </div>
+</main>
+
+<!-- INPUT -->
+<footer class="p-5">
+  <form id="chat-form" class="glass max-w-4xl mx-auto flex items-center gap-3 px-4 py-3 rounded-2xl shadow-2xl">
+    <input
+      id="user-input"
+      type="text"
+      placeholder="Message GenAI…"
+      class="flex-1 bg-transparent text-sm outline-none placeholder-gray-400"
+      autocomplete="off"
+      required
+    />
+    <button
+      class="px-5 py-2 rounded-xl bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 hover:scale-105 transition shadow-lg">
+      ➤
+    </button>
+  </form>
+</footer>
+
+<script>
+const chat = document.getElementById("chat");
+const form = document.getElementById("chat-form");
+const input = document.getElementById("user-input");
+
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const msg = input.value.trim();
+  if (!msg) return;
+
+  addMsg(msg, "user");
+  input.value = "";
+
+  const loader = addLoader();
+
+  try {
+    const res = await fetch("/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: msg })
+    });
+
+    const data = await res.json();
+    loader.remove();
+    addMsg(data.reply || data.error, data.error ? "error" : "ai");
+  } catch {
+    loader.remove();
+    addMsg("Server not reachable", "error");
+  }
+});
+
+function addMsg(text, type) {
+  const wrap = document.createElement("div");
+  wrap.className = `flex msg ${type === "user" ? "justify-end" : "justify-start"}`;
+
+  const bubble = document.createElement("div");
+  bubble.className = `
+    px-5 py-4 rounded-2xl max-w-[70%] text-sm leading-relaxed
+    ${type === "user"
+      ? "bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-xl"
+      : type === "error"
+      ? "bg-red-600 text-white"
+      : "glass"}
+  `;
+  bubble.textContent = text;
+
+  wrap.appendChild(bubble);
+  chat.appendChild(wrap);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function addLoader() {
+  const wrap = document.createElement("div");
+  wrap.className = "flex justify-start msg";
+  wrap.innerHTML = `
+    <div class="glass px-5 py-4 rounded-2xl text-gray-400 text-sm dots">
+      Thinking<span>.</span><span>.</span><span>.</span>
+    </div>`;
+  chat.appendChild(wrap);
+  chat.scrollTop = chat.scrollHeight;
+  return wrap;
+}
+</script>
+
+</body>
+</html>
