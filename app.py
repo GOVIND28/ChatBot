@@ -5,7 +5,7 @@ from google import genai
 app = Flask(__name__)
 
 # --- CONFIGURATION ---
-API_KEY = os.environ.get("GEMINI_API_KEY")
+API_KEY = os.environ.get("API_KEY")
 
 # Initialize Gemini client
 if not API_KEY:
